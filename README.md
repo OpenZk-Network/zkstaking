@@ -1,6 +1,6 @@
 # Contract Addresses
 
-## Mainnet
+## Ethereum Mainnet
 
 | Contract | Address |
 | --- | --- |
@@ -10,3 +10,9 @@
 | BridgeMiddleware | 0xcf8edfe56f8aa401f5a95f74394a905999539286 |
 | BridgeHub | 0x303a465b659cbb0ab36ee643ea362c509eeb5213 |
 | ozETH | 0x03F5BE358fc2C4DF88723a63148bd829B8AA5c91 |
+
+## OpenZK Network Mainnet
+
+| Contract | Address |
+| --- | --- |
+| ozUSD | 0xC5D1477E7A6F52f12D9389D8D51E80256b838724 |
