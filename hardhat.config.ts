@@ -26,11 +26,11 @@ const config: HardhatUserConfig = {
   etherscan: {
     apiKey: {
       mainnet:
-        process.env.ETHSCAN_API_KEY || "KXD84VPKVNCKZYFJ8PS341NWM3QFQGCC95",
+        process.env.ETHSCAN_API_KEY || "",
       sepolia:
-        process.env.ETHSCAN_API_KEY || "KXD84VPKVNCKZYFJ8PS341NWM3QFQGCC95",
+        process.env.ETHSCAN_API_KEY || "",
       holesky:
-        process.env.ETHSCAN_API_KEY || "KXD84VPKVNCKZYFJ8PS341NWM3QFQGCC95",
+        process.env.ETHSCAN_API_KEY || "",
     },
   },
   networks: {
@@ -53,7 +53,7 @@ const config: HardhatUserConfig = {
     mainnet: {
       url:
         (process.env.MAINNET_NODE as string) ||
-        "https://eth-mainnet.g.alchemy.com/v2/2j6EUPJG5bMFxMIhSL9YIwfINt7effby",
+        "https://eth-mainnet.g.alchemy.com/v2/<key>",
       accounts: [PK as string],
     },
   },
