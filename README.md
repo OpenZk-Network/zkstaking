@@ -1,6 +1,10 @@
-# Contract Addresses
+# Overview
 
-## Ethereum Mainnet
+OpenZK Network is a Layer 2 solution based on Zero-Knowledge Rollup (ZK Rollup) technology. Our solution provides a highly scalable Layer 2 infrastructure that significantly reduces transaction costs and increases throughput, while also introducing sustainable rewards mechanisms through native ETH and stablecoin staking.
+
+## Contract Addresses
+
+### Ethereum Mainnet
 
 | Contract | Address |
 | --- | --- |
@@ -11,7 +15,7 @@
 | BridgeHub | 0x303a465b659cbb0ab36ee643ea362c509eeb5213 |
 | ozETH | 0x03F5BE358fc2C4DF88723a63148bd829B8AA5c91 |
 
-## OpenZK Network Mainnet
+### OpenZK Network Mainnet
 
 | Contract | Address |
 | --- | --- |
