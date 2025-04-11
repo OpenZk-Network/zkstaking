@@ -6,6 +6,7 @@ import "../vendors/zksync/bridgehub/IBridgehub.sol";
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
@@ -39,7 +40,6 @@ contract BridgeMiddleware is AccessControl, ReentrancyGuard {
 
     ILiquidityManager public immutable liquidityManager;
     IUSDVault public immutable ozUSDVault;
-    mapping (address => bool) public supportedTokens;
 
     address public immutable univ3router; // 0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45 for mainnet
 
@@ -249,8 +249,10 @@ contract BridgeMiddleware is AccessControl, ReentrancyGuard {
         return ozUSDVault.deposit(amount, address(this));
     }
 
-    function _getAmountOutMin (uint256 amount) internal pure returns (uint256) {
-        return amount * 999 / 1000; // 0.1% slippage
+    function _getAmountOutMin (uint256 amountIn, address tokenIn, address tokenOut) internal view returns (uint256) {
+        uint decimalsIn = IERC20Metadata(tokenIn).decimals();
+        uint decimalsOut = IERC20Metadata(tokenOut).decimals();
+        return (amountIn * decimalsOut * 995) / (1000 * decimalsIn); // 0.5% slippage
     }
 
     function _performSwap (address token, uint256 amount) internal returns (uint256) {
@@ -262,7 +264,7 @@ contract BridgeMiddleware is AccessControl, ReentrancyGuard {
             ozUSDVault.asset(), // DAI Token
             address(this),
             amount,
-            _getAmountOutMin(amount) // slippage of max 0.1%
+            _getAmountOutMin(amount, token, ozUSDVault.asset()) // slippage of max 0.5%
         );
     }
 
