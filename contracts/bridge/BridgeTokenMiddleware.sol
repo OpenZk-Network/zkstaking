@@ -12,8 +12,6 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ILiquidityManager} from "../interfaces/ILiquidityManager.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 
-import 'hardhat/console.sol';
-
 contract BridgeTokenMiddleware is AccessControl, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
