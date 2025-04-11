@@ -252,7 +252,7 @@ contract BridgeMiddleware is AccessControl, ReentrancyGuard {
     function _getAmountOutMin (uint256 amountIn, address tokenIn, address tokenOut) internal view returns (uint256) {
         uint decimalsIn = IERC20Metadata(tokenIn).decimals();
         uint decimalsOut = IERC20Metadata(tokenOut).decimals();
-        return (amountIn * decimalsOut * 995) / (1000 * decimalsIn); // 0.5% slippage
+        return (amountIn * (10 ** decimalsOut) * 995) / (1000 * (10 ** decimalsIn)); // 0.5% slippage
     }
 
     function _performSwap (address token, uint256 amount) internal returns (uint256) {
