@@ -12,6 +12,8 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ILiquidityManager} from "../interfaces/ILiquidityManager.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 
+import 'hardhat/console.sol';
+
 contract BridgeTokenMiddleware is AccessControl, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -40,13 +42,11 @@ contract BridgeTokenMiddleware is AccessControl, ReentrancyGuard {
         uint256 _chainId,
         address _bridgeHub,
         address _admin,
-        address _withdrawer,
         address _liquidityManager
     ) {
         require(_nativeCoin != address(0), "BridgeWrap: native coin address is zero");
         require(_bridgeHub != address(0), "BridgeWrap: bridgeHub address is zero");
         require(_admin != address(0), "BridgeWrap: admin address is zero");
-        require(_withdrawer != address(0), "BridgeWrap: withdrawer address is zero");
         require(_liquidityManager != address(0), "BridgeWrap: liquidity manager address is zero");
 
         native = _nativeCoin;
@@ -55,7 +55,6 @@ contract BridgeTokenMiddleware is AccessControl, ReentrancyGuard {
         liquidityManager = ILiquidityManager(_liquidityManager);
 
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
-        _grantRole(WITHDRAW_ROLE, _withdrawer);
         _grantRole(WITHDRAW_ROLE, _admin);
         _grantRole(OPERATOR_ROLE, _admin);
     }
@@ -81,7 +80,7 @@ contract BridgeTokenMiddleware is AccessControl, ReentrancyGuard {
     }
 
     function supportTokens(address[] calldata tokens, bool[] calldata allows) external onlyRole(OPERATOR_ROLE) {
-        require(tokens.length != allows.length, "supportTokens: invalid tokens length");
+        require(tokens.length == allows.length, "supportTokens: invalid tokens length");
         for (uint256 i = 0; i < tokens.length; i++) {
             require(tokens[i] != address(0), "supportTokens: token cannot be zero address");
             supportedTokens[tokens[i]] = allows[i];
