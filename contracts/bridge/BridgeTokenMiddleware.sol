@@ -23,7 +23,6 @@ contract BridgeTokenMiddleware is AccessControl, ReentrancyGuard {
     event Swept(address indexed token, address indexed to);
 
     // VARIABLES
-    bytes32 public constant WITHDRAW_ROLE = keccak256("WITHDRAW_ROLE");
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
 
     address public immutable native;
@@ -33,7 +32,7 @@ contract BridgeTokenMiddleware is AccessControl, ReentrancyGuard {
     IBridgehub public immutable bridgeHub;
 
     ILiquidityManager public immutable liquidityManager;
-    mapping (address => bool) public supportedTokens;
+    mapping (address => bool) public isAllowedToken;
 
     constructor (
         address _nativeCoin,
@@ -53,12 +52,11 @@ contract BridgeTokenMiddleware is AccessControl, ReentrancyGuard {
         liquidityManager = ILiquidityManager(_liquidityManager);
 
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
-        _grantRole(WITHDRAW_ROLE, _admin);
         _grantRole(OPERATOR_ROLE, _admin);
     }
 
     function bridgeToken(address token, uint256 amount, uint256 _l2GasLimit) external payable nonReentrant {
-        require(supportedTokens[token], "BridgeWrap: token not supported");
+        require(isAllowedToken[token], "BridgeWrap: token not supported");
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
@@ -77,21 +75,28 @@ contract BridgeTokenMiddleware is AccessControl, ReentrancyGuard {
         require(success, "BridgeWrap: refund failed");
     }
 
-    function supportTokens(address[] calldata tokens, bool[] calldata allows) external onlyRole(OPERATOR_ROLE) {
-        require(tokens.length == allows.length, "supportTokens: invalid tokens length");
+    function allowTokens(address[] calldata tokens) external onlyRole(OPERATOR_ROLE) {
         for (uint256 i = 0; i < tokens.length; i++) {
             require(tokens[i] != address(0), "supportTokens: token cannot be zero address");
-            supportedTokens[tokens[i]] = allows[i];
-            emit TokenSupported(tokens[i], allows[i]);
+            isAllowedToken[tokens[i]] = true;
+            emit TokenSupported(tokens[i], true);
         }
     }
 
-    function sweepTokens(address token, address to) external onlyRole(WITHDRAW_ROLE) {
+    function disableTokens(address[] calldata tokens) external onlyRole(OPERATOR_ROLE) {
+        for (uint256 i = 0; i < tokens.length; i++) {
+            require(tokens[i] != address(0), "disableTokens: token cannot be zero address");
+            isAllowedToken[tokens[i]] = false;
+            emit TokenSupported(tokens[i], false);
+        }
+    }
+
+    function sweepTokens(address token, address to) external onlyRole(DEFAULT_ADMIN_ROLE) {
         IERC20(token).safeTransfer(to, IERC20(token).balanceOf(address(this)));
         emit Swept(token, to);
     }
 
-    function recoverEth() external onlyRole(WITHDRAW_ROLE) {
+    function recoverEth() external onlyRole(DEFAULT_ADMIN_ROLE) {
         payable(msg.sender).transfer(address(this).balance);
         emit Swept(address(0), msg.sender);
     }

@@ -41,7 +41,34 @@ describe('BridgeTokenMiddleware', () => {
       owner.address,       // admin
       liquidityManagerMock.target,
     );
-    await bridgeTokenMiddleware.supportTokens([allowedToken.target], [true]);
+    await bridgeTokenMiddleware.allowTokens([allowedToken.target]);
+  });
+
+  describe('allowTokens', () => {
+    it('Should be called only by operator', async () => {
+     await expect(bridgeTokenMiddleware.connect(other).allowTokens([allowedToken.target]))
+       .to.be.revertedWithCustomError(bridgeTokenMiddleware, 'AccessControlUnauthorizedAccount');
+
+     await expect(bridgeTokenMiddleware.connect(owner).allowTokens([allowedToken.target]))
+       .to.emit(bridgeTokenMiddleware, 'TokenSupported')
+       .withArgs(allowedToken.target, true);
+
+     expect(await bridgeTokenMiddleware.isAllowedToken(allowedToken.target)).to.be.true;
+    });
+  });
+
+  describe('disableTokens', () => {
+    it('Should be called only by operator', async () => {
+      await expect(bridgeTokenMiddleware.connect(other).disableTokens([allowedToken.target]))
+        .to.be.revertedWithCustomError(bridgeTokenMiddleware, 'AccessControlUnauthorizedAccount');
+
+      await bridgeTokenMiddleware.connect(owner).allowTokens([allowedToken.target]);
+      await expect(bridgeTokenMiddleware.connect(owner).disableTokens([allowedToken.target]))
+        .to.emit(bridgeTokenMiddleware, 'TokenSupported')
+        .withArgs(allowedToken.target, false);
+
+      expect(await bridgeTokenMiddleware.isAllowedToken(allowedToken.target)).to.be.false;
+    });
   });
 
   describe('bridgeToken', () => {
