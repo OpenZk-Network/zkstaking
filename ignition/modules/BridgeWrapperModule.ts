@@ -19,6 +19,7 @@ const BridgeMiddlewareModule = buildModule("BridgeMiddlewareModule", (m) => {
   const withdrawer = "0x1c2Cc2428736971cEa04859c9B96F6b63D7110aE";
   const liquidityManager = "0x1c21d5B5bd5d2b859D1D5B12Fd72db5ff7e98E92";
   const ozUSDVault = "0x3B5cc7D992F8ED1b4E1f9F660984adCd61fC1aCa";
+  const uniV3Router = "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45";
 
 
   const bridgeMiddleware = m.contract("BridgeMiddleware",
@@ -29,7 +30,8 @@ const BridgeMiddlewareModule = buildModule("BridgeMiddlewareModule", (m) => {
       admin,
       withdrawer,
       liquidityManager,
-      ozUSDVault
+      ozUSDVault,
+      uniV3Router
     ], {});
 
   return { bridgeMiddleware };
