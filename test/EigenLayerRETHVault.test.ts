@@ -90,7 +90,8 @@ describe("EigenLayerRETHVault", () => {
 
 		it("Should fail when unsetting missing operator", async () => {
 			const { eigenLayerVault, owner, user1 } = await loadFixture(deployFixtures);
-			await expect(eigenLayerVault.connect(owner).unsetOperator()).to.be.revertedWith("DelegationManager.undelegate: staker must be delegated to undelegate");
+			const dm = await ethers.getContractAt("IDelegationManager", delegationManagerAddress);
+			await expect(eigenLayerVault.connect(owner).unsetOperator()).to.be.revertedWithCustomError(dm, "NotActivelyDelegated()");
 		});
 
 		it("Should fail when no withdrawal queued", async () => {
@@ -147,7 +148,7 @@ describe("EigenLayerRETHVault", () => {
 				nonce: 0,
 				startBlock: currentBlock,
 				strategies: [strategyAddress],
-				shares: [initialShares / BigInt(2)]
+				scaledShares: [initialShares / BigInt(2)]
 			};
 
 			expect(withdrawalRequest[0]).to.equal(withdrawalRequestParameter.staker);
@@ -156,9 +157,9 @@ describe("EigenLayerRETHVault", () => {
 			expect(withdrawalRequest[3]).to.equal(withdrawalRequestParameter.nonce);
 			expect(withdrawalRequest[4]).to.equal(withdrawalRequestParameter.startBlock);
 			expect(withdrawalRequest[5][0]).to.equal(withdrawalRequestParameter.strategies[0]);
-			expect(withdrawalRequest[6][0]).to.equal(withdrawalRequestParameter.shares[0]);
+			expect(withdrawalRequest[6][0]).to.equal(withdrawalRequestParameter.scaledShares[0]);
 
-			const delegatebleShares = await dm.getDelegatableShares(eigenLayerVault.target);
+			const delegatebleShares = await dm.getDepositedShares(eigenLayerVault.target);
 			const expectedWithdrawalRoot = await dm.calculateWithdrawalRoot({
 				staker: withdrawalRequest[0],
 				delegatedTo: withdrawalRequest[1],
@@ -166,7 +167,7 @@ describe("EigenLayerRETHVault", () => {
 				nonce: await dm.cumulativeWithdrawalsQueued(eigenLayerVault.target),
 				startBlock: 1 + (await ethers.provider.getBlockNumber()),
 				strategies: [...withdrawalRequest[5]],
-				shares: [...delegatebleShares[1]]
+				scaledShares: [...delegatebleShares[1]]
 			} as any);
 
 			// unset operator
@@ -180,11 +181,10 @@ describe("EigenLayerRETHVault", () => {
 			expect(finalShares).to.equal(0);
 
 			// call claimWithdrawalRootsFromUnsetOperator
-			await expect(eigenLayerVault.claimWithdrawalRootsFromUnsetOperator([withdrawalRequestParameter])).to.be.revertedWith(
-				"DelegationManager._completeQueuedWithdrawal: minWithdrawalDelayBlocks period has not yet passed"
-			);
+			await expect(eigenLayerVault.claimWithdrawalRootsFromUnsetOperator([withdrawalRequestParameter])).to.be.revertedWithCustomError(dm, "WithdrawalDelayNotElapsed()");
+			const minBlockToMine = await dm.minWithdrawalDelayBlocks()
 
-			await mine(72000, { interval: 13 });
+			await mine(minBlockToMine, { interval: 13 });
 
 			const expectedWithdrawalRoot2 = await dm.calculateWithdrawalRoot(withdrawalRequestParameter);
 			await expect(eigenLayerVault.claimWithdrawalRootsFromUnsetOperator([withdrawalRequestParameter]))
@@ -204,7 +204,7 @@ describe("EigenLayerRETHVault", () => {
 					nonce: 0,
 					startBlock: 0,
 					strategies: [ZeroAddress],
-					shares: [ethers.parseEther("1")]
+					scaledShares: [ethers.parseEther("1")]
 				}
 			];
 
