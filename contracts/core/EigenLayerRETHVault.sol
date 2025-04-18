@@ -147,7 +147,7 @@ contract EigenLayerRETHVault is Initializable, RocketPoolVault {
         // Shares to unstake = 1000 * 100 / 1000 = 100
         queuedWithdrawalParam.depositShares[0] = (ratio * _shares()) / SCALE; // the ratio to total shares from EigenLayer in this strategy
         // need to compute Withdrawal so we obtain the same withdrawalRoot afterwards
-        IDelegationManager.Withdrawal
+        IDelegationManagerTypes.Withdrawal
             memory withdrawalRequest = IDelegationManagerTypes.Withdrawal({
                 staker: address(this),
                 delegatedTo: IDelegationManager(delegationManager).delegatedTo(
