@@ -4,7 +4,7 @@ pragma solidity 0.8.27;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC4626Partial} from "./../IERC4626Partial.sol";
 import {IOracle} from "./../IOracle.sol";
-import {IDelegationManager} from "./../vendors/EigenLayer/IDelegationManager.sol";
+import "./../vendors/EigenLayer/IDelegationManager.sol";
 import "./../vendors/EigenLayer/IRewardsCoordinator.sol";
 import {ISignatureUtils} from "./../vendors/EigenLayer/ISignatureUtils.sol";
 import {IStrategy} from "./../vendors/EigenLayer/IStrategy.sol";
@@ -130,27 +130,25 @@ contract EigenLayerRETHVault is Initializable, RocketPoolVault {
         _burn(msg.sender, assetsToBurn);
 
         IDelegationManager.QueuedWithdrawalParams
-            memory queuedWithdrawalParam = IDelegationManager
+            memory queuedWithdrawalParam = IDelegationManagerTypes
                 .QueuedWithdrawalParams({
                     strategies: new IStrategy[](1),
-                    shares: new uint256[](1),
-                    withdrawer: address(this)
+                    depositShares: new uint256[](1),
+                    __deprecated_withdrawer: address(this)
                 });
 
         queuedWithdrawalParam.strategies[0] = IStrategy(strategy);
 
-        cliff = block.number + IDelegationManager(delegationManager).getWithdrawalDelay(
-            queuedWithdrawalParam.strategies
-        );
+        cliff = block.number + IDelegationManager(delegationManager).minWithdrawalDelayBlocks();
 
         // Calculate the shares to unstake, based on total shares in the vault
         // User wants to withdraw 10% of the total shares, or 100 shares
         // Shares in the vault = 1000
         // Shares to unstake = 1000 * 100 / 1000 = 100
-        queuedWithdrawalParam.shares[0] = (ratio * _shares()) / SCALE; // the ratio to total shares from EigenLayer in this strategy
+        queuedWithdrawalParam.depositShares[0] = (ratio * _shares()) / SCALE; // the ratio to total shares from EigenLayer in this strategy
         // need to compute Withdrawal so we obtain the same withdrawalRoot afterwards
         IDelegationManager.Withdrawal
-            memory withdrawalRequest = IDelegationManager.Withdrawal({
+            memory withdrawalRequest = IDelegationManagerTypes.Withdrawal({
                 staker: address(this),
                 delegatedTo: IDelegationManager(delegationManager).delegatedTo(
                     address(this)
@@ -160,7 +158,7 @@ contract EigenLayerRETHVault is Initializable, RocketPoolVault {
                     .cumulativeWithdrawalsQueued(address(this)),
                 startBlock: uint32(block.number),
                 strategies: queuedWithdrawalParam.strategies,
-                shares: queuedWithdrawalParam.shares
+                scaledShares: queuedWithdrawalParam.depositShares
             });
 
         IDelegationManager.QueuedWithdrawalParams[]
@@ -174,7 +172,7 @@ contract EigenLayerRETHVault is Initializable, RocketPoolVault {
         );
 
         Queue memory queue = Queue({
-            amount: queuedWithdrawalParam.shares[0], // number of rETH shares from eigenlayer -> will be transformed to rETH and then to ETH when completed
+            amount: queuedWithdrawalParam.depositShares[0], // number of rETH shares from eigenlayer -> will be transformed to rETH and then to ETH when completed
             receiver: receiver,
             owner: owner,
             cliff: cliff,
@@ -190,7 +188,7 @@ contract EigenLayerRETHVault is Initializable, RocketPoolVault {
 
         emit QueueWithdraw(
             msg.sender,
-            queuedWithdrawalParam.shares[0],
+            queuedWithdrawalParam.depositShares[0],
             receiver,
             owner,
             cliff,
@@ -234,7 +232,6 @@ contract EigenLayerRETHVault is Initializable, RocketPoolVault {
         IDelegationManager(delegationManager).completeQueuedWithdrawal(
             _withdrawQueue.withdrawalRequest,
             tokens,
-            0,
             true
         );
 
@@ -261,7 +258,7 @@ contract EigenLayerRETHVault is Initializable, RocketPoolVault {
         bytes32 salt
     ) external onlyRole(DEFAULT_ADMIN_ROLE){
         // call delgateTo on the delegation manager
-        ISignatureUtils.SignatureWithExpiry memory sig = ISignatureUtils
+        ISignatureUtilsMixinTypes.SignatureWithExpiry memory sig = ISignatureUtilsMixinTypes
             .SignatureWithExpiry(signature, expiry);
         IDelegationManager(delegationManager).delegateTo(operator, sig, salt);
         emit NewOperatorSet(operator);
@@ -301,7 +298,6 @@ contract EigenLayerRETHVault is Initializable, RocketPoolVault {
             IDelegationManager(delegationManager).completeQueuedWithdrawal(
                 withdrawalRequest[i],
                 tokens,
-                0,
                 false
             );
             withdrawalRoots[i] = withdrawalRoot;
