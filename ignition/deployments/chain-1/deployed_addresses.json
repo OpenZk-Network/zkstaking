@@ -1,3 +1,5 @@
 {
-  "BridgeMiddlewareModule#BridgeMiddleware": "0xbD9a30a63DF163DC91EFd65060d47Ed350061B53"
+  "ProxyModule#EigenLayerRETHVault": "0x885294D8885F409293592FBB26EE1d798690e42a",
+  "ProxyModule#ERC1967Proxy": "0x2df8799244fEbDA21B2e804af126Aa61199D2113",
+  "EigenLayerRETHVaultModule#EigenLayerRETHVault": "0x2df8799244fEbDA21B2e804af126Aa61199D2113"
 }
