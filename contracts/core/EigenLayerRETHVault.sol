@@ -129,7 +129,7 @@ contract EigenLayerRETHVault is Initializable, RocketPoolVault {
         uint256 assetsToBurn = (ratio * totalSupply()) / SCALE;
         _burn(msg.sender, assetsToBurn);
 
-        IDelegationManager.QueuedWithdrawalParams
+        IDelegationManagerTypes.QueuedWithdrawalParams
             memory queuedWithdrawalParam = IDelegationManagerTypes
                 .QueuedWithdrawalParams({
                     strategies: new IStrategy[](1),
