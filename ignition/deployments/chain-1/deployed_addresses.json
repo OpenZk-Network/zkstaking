@@ -1,5 +1,3 @@
 {
-  "ProxyModule#EigenLayerRETHVault": "0x885294D8885F409293592FBB26EE1d798690e42a",
-  "ProxyModule#ERC1967Proxy": "0x2df8799244fEbDA21B2e804af126Aa61199D2113",
-  "EigenLayerRETHVaultModule#EigenLayerRETHVault": "0x2df8799244fEbDA21B2e804af126Aa61199D2113"
+  "EigenLayerRETHVaultImplementationModule#EigenLayerRETHVault": "0x47E4E0Ef5837BEB7BaC8f3FA7d26c200d8CAc136"
 }
