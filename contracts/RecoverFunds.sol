@@ -9,7 +9,6 @@ contract RecoverFunds is Ownable {
 
     }
 
-
     function recoverERC20(address tokenAddress) external onlyOwner {
         IERC20 token = IERC20(tokenAddress);
         token.transfer(owner(), token.balanceOf(address(this)));
