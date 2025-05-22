@@ -10,7 +10,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ILiquidityManager} from "../interfaces/ILiquidityManager.sol";
-import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 
 contract BridgeTokenMiddleware is AccessControl, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -55,20 +54,24 @@ contract BridgeTokenMiddleware is AccessControl, ReentrancyGuard {
         _grantRole(OPERATOR_ROLE, _admin);
     }
 
-    function bridgeToken(address token, uint256 amount, uint256 _l2GasLimit) external payable nonReentrant {
+    function bridgeToken(address token, uint256 amount, uint256 _l2GasLimit, address l2Receiver) external payable nonReentrant {
         require(isAllowedToken[token], "BridgeWrap: token not supported");
 
+        uint256 netAmount = IERC20(token).balanceOf(address(this));
+
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        netAmount = IERC20(token).balanceOf(address(this)) - netAmount;
 
         // mint gas for layer2 payment
         uint256 gasCost = l2TransactionBaseCost(tx.gasprice, _l2GasLimit, 800);
         uint256 neededEth = _convertToEthAmount(gasCost);
         require (msg.value >= neededEth, "BridgeWrap: not enough ETH to cover the gas cost");
         uint256 gasMinted = _stakeNative(neededEth);
+        require(gasMinted >= gasCost, "BridgeWrap: not enough gas minted");
 
         // bridge to L2
-        _bridgeErc20(msg.sender, token, amount, _l2GasLimit, 800, gasMinted);
-        emit BridgeToken(token, amount, _l2GasLimit, 800, gasMinted);
+        _bridgeErc20(l2Receiver, token, netAmount, _l2GasLimit, 800, gasMinted);
+        emit BridgeToken(token, netAmount, _l2GasLimit, 800, gasMinted);
 
         // refund the remaining ETH to the user
         (bool success, ) = payable(msg.sender).call{value: msg.value - neededEth}("");
@@ -97,7 +100,8 @@ contract BridgeTokenMiddleware is AccessControl, ReentrancyGuard {
     }
 
     function recoverEth() external onlyRole(DEFAULT_ADMIN_ROLE) {
-        payable(msg.sender).transfer(address(this).balance);
+        (bool result,) = payable(msg.sender).call{ value: address(this).balance }("");
+        require (result, "recoverEth: WITHDRAW_FAILED");
         emit Swept(address(0), msg.sender);
     }
 
@@ -114,26 +118,13 @@ contract BridgeTokenMiddleware is AccessControl, ReentrancyGuard {
         return bridgeHub.l2TransactionBaseCost(chainId, _l1GasPrice, _l2GasLimit, _l2GasPerPubdataByteLimit);
     }
 
-    /// @notice estimate the cost of L2 tx in ETH.
-    /// @param _l1GasPrice The gas price on L1
-    /// @param _l2GasLimit The estimated L2 gas limit
-    /// @param _l2GasPerPubdataByteLimit The price for each pubdata byte in L2 gas
-    /// @return The price of L2 gas in the base token
-    function l2TransactionEthCost(uint256 _l1GasPrice, uint256 _l2GasLimit, uint256 _l2GasPerPubdataByteLimit)
-    external
-    returns (uint256)
-    {
-        uint256 baseCost = l2TransactionBaseCost(_l1GasPrice, _l2GasLimit, _l2GasPerPubdataByteLimit);
-        return _convertToEthAmount(baseCost);
-    }
-
     function _convertToEthAmount(uint256 _baseTokenAmount) internal returns (uint256) {
         uint256 nativeCoinAmount = IERC20(native).totalSupply();
         uint256 lmValue = liquidityManager.virtualBalance();
         if (lmValue == 0) {
             return _baseTokenAmount;
         }
-        return _baseTokenAmount * lmValue * 1_000_000 / (nativeCoinAmount * 950_000); // cover for swap slippage
+        return _baseTokenAmount * lmValue * 1_000_000 / (nativeCoinAmount * 995_000); // cover for swap slippage
     }
 
     /// Bridge ERC20 from L1 (Ethereum) to L2 (hyperchain)
