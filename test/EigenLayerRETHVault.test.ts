@@ -223,7 +223,7 @@ describe("EigenLayerRETHVault", () => {
 		const amountIn = ethers.parseEther("0.1");
 		const feeTier = 3000; // typical Uniswap V3 fee tier
 
-		it("Should fail for non admin", async () => {
+		it("Should fail for non claim role", async () => {
 			const { eigenLayerUniswap, user1 } = await loadFixture(deployFixtures);
 			await expect(eigenLayerUniswap.connect(user1).addRewardsToUnderlying([wethAddress], [], [amountIn], [0], [feeTier])).to.be.revertedWithCustomError(
 				eigenLayerUniswap,
@@ -232,8 +232,9 @@ describe("EigenLayerRETHVault", () => {
 		});
 
 		it("Should fail for invalid inputs", async () => {
-			const { eigenLayerUniswap } = await loadFixture(deployFixtures);
-			await expect(eigenLayerUniswap.addRewardsToUnderlying([wethAddress], [], [amountIn], [0], [])).to.be.revertedWith("addRewardsToUnderlying: Invalid input");
+			const { eigenLayerUniswap, user1 } = await loadFixture(deployFixtures);
+			await eigenLayerUniswap.grantRole("0x11a8cb5a02bd6c42679835e867ef2118ba78f088f8300511420c6603c21d9c78", user1);
+			await expect(eigenLayerUniswap.connect(user1).addRewardsToUnderlying([wethAddress], [], [amountIn], [0], [])).to.be.revertedWith("addRewardsToUnderlying: Invalid input");
 		});
 
 		it("should successfully swap WETH rewards into the underlying token", async () => {
@@ -262,6 +263,7 @@ describe("EigenLayerRETHVault", () => {
 			const swapPath = ethers.solidityPacked(["address", "uint24", "address"], [wethAddress, feeTier, rETHAddress]);
 
 			// --- Capture the event and verify the underlying token’s balance ---
+			await eigenLayerUniswap.grantRole("0x11a8cb5a02bd6c42679835e867ef2118ba78f088f8300511420c6603c21d9c78", owner);
 			const tx = await eigenLayerUniswap.connect(owner).addRewardsToUnderlying([wethAddress], [swapPath], [amountIn], [0], [feeTier]);
 			let args: any[];
 			const receipt = await tx.wait();

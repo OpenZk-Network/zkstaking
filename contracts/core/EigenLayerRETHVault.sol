@@ -19,6 +19,8 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// @custom:oz-upgrades-unsafe-allow constructor state-variable-immutable
 contract EigenLayerRETHVault is Initializable, RocketPoolVault {
 
+    bytes32 public constant CLAIMER_ROLE = keccak256("CLAIMER_ROLE");
+
     using Swap for ISwapRouter;
     using SafeERC20 for IERC20;
 
@@ -361,7 +363,7 @@ contract EigenLayerRETHVault is Initializable, RocketPoolVault {
         uint256[] calldata amounts,
         uint256[] calldata amountsOutMin,
         uint24[] calldata fees
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyRole(CLAIMER_ROLE) {
         require(
             tokens.length == amounts.length
             && tokens.length == fees.length
